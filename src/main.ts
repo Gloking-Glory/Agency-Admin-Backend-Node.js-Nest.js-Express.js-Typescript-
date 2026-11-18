@@ -5,10 +5,10 @@ import { AppModule } from './app.module.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   const configService = app.get(ConfigService);
 
-  const appPort = configService.get<string>("PORT");
+  const appPort = configService.get<number>('PORT');
 
   await app.listen(appPort ?? 3000);
 }
