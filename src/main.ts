@@ -5,6 +5,8 @@ import { AppModule } from './app.module.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  app.enableShutdownHooks();      //  for prisma shutdown gracefully
 
   const configService = app.get(ConfigService);
 
