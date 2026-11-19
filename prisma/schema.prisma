@@ -11,3 +11,44 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  ADMIN
+  AGENCY
+}
+
+model User {
+  id              String        @id @default(uuid()) @db.Uuid
+  email           String        @unique
+  passwordHash    String
+  role            UserRole
+  isActive        Boolean       @default(true)
+
+  adminProfile  AdminProfile?
+  agencyProfile  AgencyProfile?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model AdminProfile {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @unique @db.Uuid
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model AgencyProfile {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @unique @db.Uuid
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName     String
+  address         String
+  contactDetails  String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
