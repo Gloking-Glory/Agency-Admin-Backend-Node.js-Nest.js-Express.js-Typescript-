@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -17,38 +12,95 @@ enum UserRole {
   AGENCY
 }
 
+enum EmailIdentityStatus {
+  ACTIVE
+  ARCHIVED
+  RELEASED
+}
+
+enum ArchiveStatus {
+  ARCHIVED
+  RESTORED
+  CLOSED
+}
+
 model User {
-  id              String        @id @default(uuid()) @db.Uuid
-  email           String        @unique
-  passwordHash    String
-  role            UserRole
-  isActive        Boolean       @default(true)
+  id           String   @id @default(uuid()) @db.Uuid
+  passwordHash String
+  role         UserRole
+  isActive     Boolean  @default(true)
+
+  emailIdentityId String        @unique @db.Uuid
+  emailIdentity   EmailIdentity @relation(fields: [emailIdentityId], references: [id])
 
   adminProfile  AdminProfile?
-  agencyProfile  AgencyProfile?
+  agencyProfile AgencyProfile?
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AdminProfile {
-  id              String        @id @default(uuid()) @db.Uuid
-  userId          String        @unique @db.Uuid
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String  @id @default(uuid()) @db.Uuid
+  userId       String  @unique @db.Uuid
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isSuperAdmin Boolean @default(false)
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AgencyProfile {
-  id              String        @id @default(uuid()) @db.Uuid
-  userId          String        @unique @db.Uuid
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  companyName     String
-  address         String
-  contactDetails  String?
+  companyName    String
+  address        String
+  contactDetails String?
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailIdentity {
+  id              String              @id @default(uuid()) @db.Uuid
+  normalizedEmail String              @unique
+  status          EmailIdentityStatus @default(ACTIVE)
+
+  user     User?
+  archives AccountArchive[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AccountArchive {
+  id String @id @default(uuid()) @db.Uuid
+
+  originalUserId    String @db.Uuid
+  originalProfileId String @db.Uuid
+
+  emailIdentityId String        @db.Uuid
+  emailIdentity   EmailIdentity @relation(fields: [emailIdentityId], references: [id], onDelete: Restrict)
+
+  role            UserRole
+  normalizedEmail String
+  deletionReason  String
+  snapshot        Json
+
+  deletedByUserId String   @db.Uuid
+  deletedAt       DateTime @default(now())
+
+  status           ArchiveStatus @default(ARCHIVED)
+  restoredAt       DateTime?
+  restoredByUserId String?       @db.Uuid
+
+  emailReleasedAt       DateTime?
+  emailReleasedByUserId String?   @db.Uuid
+
+  @@index([originalUserId])
+  @@index([emailIdentityId])
+  @@index([normalizedEmail])
+  @@index([status, deletedAt])
 }
